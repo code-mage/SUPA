@@ -14,12 +14,14 @@
     "dependencies": {
         "@microsoft/office-js-helpers": "^1.0.1",
         "@types/q": "^1.5.1",
+        "@types/reflux": "^6.4.1",
         "azure-devops-node-api": "^6.6.0",
         "core-js": "^2.5.3",
         "office-ui-fabric-react": "^5.51.0",
         "q": "^1.5.1",
         "react": "^16.2.0",
-        "react-dom": "^16.2.0"
+        "react-dom": "^16.2.0",
+        "reflux": "^6.4.1"
     },
     "devDependencies": {
         "@types/office-js": "0.0.51",

@@ -41,10 +41,10 @@
             "check-open-brace",
             "check-whitespace"
         ],
-        "quotemark": [
-            true,
-            "single"
-        ],
+        // "quotemark": [
+        //     true,
+        //     "double"
+        // ],
         "radix": true,
         "semicolon": [
             true,

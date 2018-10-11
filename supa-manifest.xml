@@ -93,7 +93,8 @@
                     <SourceLocation resid="messageReadTaskPaneUrl" />
                   </Action>
                 </Control>
-                <Control xsi:type="Button" id="closeWITAction">
+                <!-- This is for a direct call. It's not working for some reason -->
+                <!-- <Control xsi:type="Button" id="closeWITAction">
                   <Label resid="closeWITActionLabel" />
                   <Supertip>
                     <Title resid="closeWITActionTipTitle" />
@@ -107,7 +108,7 @@
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>getWorkItem</FunctionName>
                   </Action>
-                </Control>
+                </Control> -->
                 <!-- Go to http://aka.ms/ButtonCommands to learn how to add more Controls: ExecuteFunction and Menu -->
               </Group>
             </OfficeTab>

@@ -1,0 +1,32 @@
+.witlist-button .ms-Button-icon {
+    font-size: 12px;
+}
+
+.witlist-button {
+    height: 18px;
+}
+
+.command-bar {
+    background-color: transparent;
+    display: inline;
+}
+
+.command-bar .ms-CommandBarItem {
+    display: inline;
+    height: 20px;
+    line-height: 20px;
+}
+
+.command-bar .ms-CommandBarItem-link {
+    display: inline;
+    height: 20px;
+    line-height: 20px;
+}
+
+.command-bar .ms-CommandBar-primaryCommands {
+    margin: 0px;
+}
+
+.command-bar .ms-CommandBar-sideCommands {
+    display: none;
+}

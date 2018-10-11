@@ -1,51 +1,18 @@
+import { WITActionCreator } from './Actions/WITActionCreator';
 import * as React from 'react';
-import { Button, ButtonType } from 'office-ui-fabric-react';
-import Header from './Header';
-import HeroList, { HeroListItem } from './HeroList';
+// import { Button, ButtonType } from 'office-ui-fabric-react';
 import Progress from './Progress';
-
-
+import { WIT } from './Components/WIT';
 
 export interface AppProps {
     title: string;
     isOfficeInitialized: boolean;
 }
 
-export interface AppState {
-    listItems: HeroListItem[];
-}
 
-export default class App extends React.Component<AppProps, AppState> {
+export default class App extends React.Component<AppProps> {
     constructor(props, context) {
         super(props, context);
-        this.state = {
-            listItems: []
-        };
-    }
-
-    componentDidMount() {
-        this.setState({
-            listItems: [
-                {
-                    icon: 'Ribbon',
-                    primaryText: 'Achieve more with Office integration'
-                },
-                {
-                    icon: 'Unlock',
-                    primaryText: 'Unlock features and functionality'
-                },
-                {
-                    icon: 'Design',
-                    primaryText: 'Create and visualize like a pro'
-                }
-            ]
-        });
-    }
-
-    click = async () => {
-        /**
-         * Insert your Outlook code here
-         */
     }
 
     render() {
@@ -54,7 +21,8 @@ export default class App extends React.Component<AppProps, AppState> {
             isOfficeInitialized,
         } = this.props;
 
-        if (!isOfficeInitialized) {
+        // TODO: edit it to not isOfficeInitialized.
+        if (isOfficeInitialized) {
             return (
                 <Progress
                     title={title}
@@ -66,11 +34,7 @@ export default class App extends React.Component<AppProps, AppState> {
 
         return (
             <div className='ms-welcome'>
-                <Header logo='assets/logo-filled.png' title={this.props.title} message='Welcome' />
-                <HeroList message='Discover what SUPA can do for you today!' items={this.state.listItems}>
-                    <p className='ms-font-l'>Modify the source files, then click <b>Run</b>.</p>
-                    <Button className='ms-welcome__action' buttonType={ButtonType.hero} iconProps={{ iconName: 'ChevronRight' }} onClick={this.click}>Run</Button>
-                </HeroList>
+                <WIT logo='assets/logo-filled.png' title={this.props.title} WITActionCreator={new WITActionCreator()} />
             </div>
         );
     }

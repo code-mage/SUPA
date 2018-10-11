@@ -1,0 +1,16 @@
+.wit-badge {
+    padding: 10px 20px;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.wit-badge .high {
+    color: red;
+}
+
+.wit-badge .med {
+    color: orange;
+}
+
+.wit-badge .low {
+    color: yellow;
+}

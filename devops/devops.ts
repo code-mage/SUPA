@@ -1,100 +1,124 @@
 import * as azdev from 'azure-devops-node-api';
 import { TeamContext } from 'azure-devops-node-api/interfaces/CoreInterfaces';
-import { WorkItemQueryResult } from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
+import {
+    WorkItem,
+    WorkItemQueryResult
+} from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
 import { IWorkItemTrackingApi } from 'azure-devops-node-api/WorkItemTrackingApi';
-import { Templates, ITemplate } from '../templates/template';
 import * as Q from 'q';
 
+import { ITemplate, Templates } from '../templates/template';
+import { IWITTemplate } from './../templates/template';
+import { DevopsConstants, DevopsQueries } from './devopsConstants';
+
 class WIQLQuery {
-  private static wiql: string =
-    'SELECT [System.Id], [System.WorkItemType], [System.Title], [System.State], [System.AreaPath], [System.IterationPath], [##WorkItemThreadIdField##] FROM workitems WHERE [System.WorkItemType]="##WorkItemType##" AND [System.TeamProject] = "##ProjectName##" AND [System.AreaPath] UNDER "##ParentAreaPath##" AND [System.Tags] CONTAINS "##WorkItemIdentificationTag##" AND [##WorkItemThreadIdField##] CONTAINS "##IssueId##"';
+    private static getQuery(query: string, template: IWITTemplate): string {
+        for (let key in template) {
+            if (template.hasOwnProperty(key)) {
+                let keyValue = '##' + key + '##';
+                let regex = new RegExp(keyValue, 'g');
+                query = query.replace(regex, template[key]);
+            }
+        }
+        return query;
+    }
 
-  public static getQuery(template: ITemplate, issueId: string): string {
-    let wiqlQuery = this.wiql;
-    wiqlQuery.replace('##WorkItemType##', template.WorkItemType);
-    wiqlQuery.replace('##ProjectName##', template.ProjectName);
-    wiqlQuery.replace('##ParentAreaPath##', template.ParentAreaPath);
-    wiqlQuery.replace(
-      '##WorkItemIdentificationTag##',
-      template.WorkItemIdentificationTag
-    );
-    wiqlQuery.replace(
-      '##WorkItemThreadIdField##',
-      template.WorkItemThreadIdField
-    );
-    wiqlQuery.replace('##IssueId##', issueId);
-
-    return wiqlQuery;
-  }
+    public static getAllActiveQuery(template: IWITTemplate): string {
+        let wiqlQuery: string = JSON.parse(
+            JSON.stringify(DevopsQueries.getAllActiveWiql)
+        );
+        return this.getQuery(wiqlQuery, template);
+    }
 }
 
 export class Devops {
-  public template: ITemplate;
-  private connection: azdev.WebApi;
-  private witApi: IWorkItemTrackingApi;
+    public template: ITemplate;
+    private connection: azdev.WebApi;
+    private witApi: IWorkItemTrackingApi;
 
-  constructor() {
-    this.template = Templates.MarketPlaceTemplate;
-    this.connectToAzDev();
-  }
-
-  private connectToAzDev() {
-    let orgUrl = this.template.orgUrl;
-    let token: string = this.template.PAT;
-    let authHandler = azdev.getPersonalAccessTokenHandler(token);
-    this.connection = new azdev.WebApi(orgUrl, authHandler);
-  }
-
-  public getWorkItem(issueId: string): Q.Promise<WorkItemQueryResult> {
-    let deferred = Q.defer<WorkItemQueryResult>();
-    console.log(' sTARTING ' );
-    if (!this.witApi) {
-      console.log('1 ' );
-      console.log(this.connection);
-     this.connection.getWorkItemTrackingApi().then((api: IWorkItemTrackingApi) => {
-      console.log('2 ' );
-      this.witApi = api;
-      this.queryWorkItem(issueId).then(
-        (result: WorkItemQueryResult) => {
-          console.log('3 ' );
-          deferred.resolve(result);
-        },
-        (error: any) => {
-          console.log(' WIT ' + error);
-          deferred.reject(error);
-        }
-      );
-     },
-     (error: any) => {
-      console.log(' Connection ' + error);
-      deferred.reject(error);
-     });
+    constructor() {
+        this.template = Templates.MarketPlaceTemplate;
+        this.connectToAzDev();
     }
-    else {
-      console.log('4 ' );
-      this.queryWorkItem(issueId).then(
-        (result: WorkItemQueryResult) => {
-          console.log('5 ' );
-          deferred.resolve(result);
-        },
-        (error: any) => {
-          console.log(' WIT ' + error);
-          deferred.reject(error);
-        }
-      );
-    }
-    return deferred.promise;
-  }
 
-  private queryWorkItem(issueId: string): Promise<WorkItemQueryResult> {
-    console.log('QUERY: ' + issueId );
-    const teamContext: TeamContext = {
-      projectId: undefined,
-      project: this.template.ProjectName,
-      teamId: undefined,
-      team: undefined
-    };
-    let wiql = WIQLQuery.getQuery(this.template, issueId);
-    return this.witApi.queryByWiql({ query: wiql }, teamContext);
-  }
+    private connectToAzDev() {
+        let orgUrl = this.template.orgUrl;
+        let token: string = this.template.PAT;
+        let authHandler = azdev.getPersonalAccessTokenHandler(token);
+        this.connection = new azdev.WebApi(orgUrl, authHandler);
+    }
+
+    protected getWitApi(): Q.Promise<IWorkItemTrackingApi> {
+        let deferred = Q.defer<IWorkItemTrackingApi>();
+        if (!this.witApi) {
+            this.connection.getWorkItemTrackingApi().then(
+                (api: IWorkItemTrackingApi) => {
+                    this.witApi = api;
+                    deferred.resolve(api);
+                },
+                (error: any) => {
+                    deferred.reject(error);
+                }
+            );
+        } else {
+            deferred.resolve(this.witApi);
+        }
+        return deferred.promise;
+    }
+}
+
+export class Read extends Devops {
+    public getAllActiveWorkItems(): Q.Promise<WorkItem[]> {
+        let apiPromise = this.getWitApi();
+        let deferred = Q.defer<WorkItem[]>();
+
+        apiPromise.then(
+            (api: IWorkItemTrackingApi) => {
+                this.queryAllActiveWorkItems(api).then(
+                    (result: WorkItemQueryResult) => {
+                        let workItemIds: number[] = [];
+                        for (let workItem of result.workItems) {
+                            workItemIds.push(workItem.id);
+                        }
+                        this.getWorkItemDetails(api, workItemIds).then(
+                            (results: WorkItem[]) => {
+                                deferred.resolve(results);
+                            },
+                            (error: any) => {
+                                deferred.reject(error);
+                            }
+                        );
+                    },
+                    (error: any) => {
+                        deferred.reject(error);
+                    }
+                );
+            },
+            (error: any) => {
+                deferred.reject(error);
+            }
+        );
+
+        return deferred.promise;
+    }
+
+    private getWorkItemDetails(
+        api: IWorkItemTrackingApi,
+        workItemIds: number[]
+    ): Promise<WorkItem[]> {
+        return api.getWorkItems(workItemIds, DevopsConstants.fields);
+    }
+
+    private queryAllActiveWorkItems(
+        api: IWorkItemTrackingApi
+    ): Promise<WorkItemQueryResult> {
+        const teamContext: TeamContext = {
+            projectId: undefined,
+            project: this.template.WITTemplate.ProjectName,
+            teamId: undefined,
+            team: undefined
+        };
+        let wiql = WIQLQuery.getAllActiveQuery(this.template.WITTemplate);
+        return api.queryByWiql({ query: wiql }, teamContext);
+    }
 }
