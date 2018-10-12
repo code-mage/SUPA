@@ -1,12 +1,8 @@
 import './WorkItemList.css';
 
 import { Link } from 'office-ui-fabric-react/lib/Link';
-import {
-    CommandBar
-} from 'office-ui-fabric-react/lib/CommandBar';
-import {
-    IContextualMenuItem
-} from 'office-ui-fabric-react/lib/ContextualMenu';
+import { CommandBar } from 'office-ui-fabric-react/lib/CommandBar';
+import { IContextualMenuItem } from 'office-ui-fabric-react/lib/ContextualMenu';
 import { WorkItem } from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
 import { IconButton } from 'office-ui-fabric-react/lib/Button';
 import {
@@ -22,7 +18,9 @@ import * as React from 'react';
 
 import { DevopsConstants } from '../../../devops/devopsConstants';
 import { WITBadge } from './WITBadge';
-import {WITAction} from './WITAction';
+import { WITAction, Action, ActionFunc } from './WITAction';
+import { WITActionCreator } from '../Actions/WITActionCreator';
+import { Template } from '../../../devops/devops';
 
 export interface IListItems {
     title: string;
@@ -33,11 +31,15 @@ export interface IListItems {
 
 export interface WorkItemListProps {
     workItems: WorkItem[];
+    actionCreator: WITActionCreator;
 }
 
 export interface WorkItemListState {
     expandedWorkItem: number[];
-    actionableItem: number;
+    action: {
+        item: number;
+        action: Action;
+    };
 }
 
 export class WorkItemList extends React.Component<
@@ -48,7 +50,7 @@ export class WorkItemList extends React.Component<
         super(props, context);
         this.state = {
             expandedWorkItem: [],
-            actionableItem: -1
+            action: undefined
         };
     }
 
@@ -102,14 +104,6 @@ export class WorkItemList extends React.Component<
     private _getColumns(): IColumn[] {
         return [
             {
-                key: 'witId',
-                name: 'Id',
-                fieldName: 'witId',
-                minWidth: 50,
-                maxWidth: 60,
-                isResizable: true
-            },
-            {
                 key: 'title',
                 name: 'Title',
                 fieldName: 'title',
@@ -146,24 +140,46 @@ export class WorkItemList extends React.Component<
 
     @autobind
     private _onRenderRow(props: IDetailsRowProps): JSX.Element {
-        if (props.item.id === this.state.actionableItem) {
-            return (
-                <div>
-                    <DetailsRow {...props} />
-                    <WITAction workItems={this.props.workItems[props.item.id]} />
-                </div>
+        let items: JSX.Element[] = [];
+        if (this.state.action && this.state.action.item === props.item.id) {
+            items.push(
+                <WITAction
+                    action={
+                        {
+                            action: this.state.action.action,
+                            callback: this._getAction(this.state.action.action),
+                            cancel: this._cancelAction
+                        } as ActionFunc
+                    }
+                    workItems={this.props.workItems[props.item.id]}
+                />
             );
         }
-        else if (this._isExpanded(props.item.id)) {
-            return (
-                <div>
-                    <DetailsRow {...props} />
-                    <WITBadge workItems={this.props.workItems[props.item.id]} />
-                </div>
+        if (this._isExpanded(props.item.id)) {
+            items.push(
+                <WITBadge workItems={this.props.workItems[props.item.id]} />
             );
-        } else {
-            return <DetailsRow {...props} />;
         }
+
+        return (
+            <div>
+                <DetailsRow {...props} />
+                {items}
+            </div>
+        );
+    }
+
+    private _getAction(action: Action) {
+        switch (action) {
+            case Action.Resolve:
+                return this.props.actionCreator.resolveWIT;
+                //TODO: good error handling
+        }
+    }
+
+    @autobind
+    private _cancelAction() {
+        this.setState({action: undefined});
     }
 
     @autobind
@@ -205,17 +221,16 @@ export class WorkItemList extends React.Component<
                 }
             case 'action':
                 return this._commandMenu(item.id);
-            case 'witId':
+            case 'title':
                 //TODO: URL using provided project and org
                 return (
                     <Link
                         target="_blank"
                         href={
-                            'https://dev.azure.com/mseng/AzureDevOps/_workitems/edit/' +
-                            item.witId
+                            Template.getUrl(item.witId)
                         }
                     >
-                        {item.witId}
+                        {fieldContent}
                     </Link>
                 );
             default:
@@ -230,15 +245,25 @@ export class WorkItemList extends React.Component<
                 key: 'resolve',
                 icon: 'CheckMark',
                 className: 'title-bar-button resolve',
-                onClick: () =>
-                    this._resolveItem(id)
+                onClick: () => this._resolveItem(id)
             }
         ];
-        return <CommandBar className="command-bar" items={[]} overflowItems={items} />;
+        return (
+            <CommandBar
+                className="command-bar"
+                items={[]}
+                overflowItems={items}
+            />
+        );
     }
 
     private _resolveItem(id: number) {
-        this.setState({actionableItem: id});
+        this.setState({
+            action: {
+                item: id,
+                action: Action.Resolve
+            }
+        });
     }
 
     private _isExpanded(id: number): boolean {

@@ -12,6 +12,7 @@ export enum FetchState {
 export interface WITStoreState {
     workItems: WorkItem[];
     fetchState: FetchState;
+    error: string;
 }
 
 export class WITStoreDefinition extends Reflux.Store {
@@ -22,6 +23,7 @@ export class WITStoreDefinition extends Reflux.Store {
         } as WITStoreState;
         this.listenTo(Actions.fetchWIT, this.onFetchWIT);
         this.listenTo(Actions.setFetchState, this.onSetFetchState);
+        this.listenTo(Actions.setError, this.onSetError);
     }
 
     data() {
@@ -38,6 +40,13 @@ export class WITStoreDefinition extends Reflux.Store {
     onSetFetchState(state: FetchState) {
         this.setState({
             fetchState: state
+        } as WITStoreState);
+    }
+
+    onSetError(error: string) {
+        this.setState({
+            fetchState: FetchState.Error,
+            error: error
         } as WITStoreState);
     }
 }

@@ -59,7 +59,7 @@ obj
 bin
 *.user
 
-templates/**
+templates/templateCollection/**
 
 node_modules/**
 packages/**

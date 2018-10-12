@@ -26,7 +26,8 @@ export class WIT extends Reflux.Component<
         super(props);
         this.state = {
             workItems: [],
-            fetchState: FetchState.Initial
+            fetchState: FetchState.Initial,
+            error: undefined
         }; // our store will add its own state to the component's
         this.store = WITStoreDefinition; // <- just assign the store class itself
         this.props.WITActionCreator.fetchWITData();
@@ -39,7 +40,7 @@ export class WIT extends Reflux.Component<
                     <section className="welcome-header">
                         <h1 className="header">{'WorkItems'}</h1>
                     </section>
-                    <WorkItemList workItems={this.state.workItems} />
+                    <WorkItemList workItems={this.state.workItems} actionCreator={this.props.WITActionCreator} />
                 </div>
             );
         } else {

@@ -12,4 +12,8 @@ export class WITSource {
     public fetchWIT(): Q.Promise<WorkItem[]> {
         return this._readAPI.getAllActiveWorkItems();
     }
+
+    public resolveWIT(id: number, tags: string): Q.Promise<WorkItem> {
+        return this._readAPI.ResolveWorkItems(id, tags);
+    }
 }

@@ -6,6 +6,8 @@ export class DevopsConstants {
     public static AssignedTo = 'System.AssignedTo';
     public static CreatedDate = 'System.CreatedDate';
     public static ChangedDate = 'System.ChangedDate';
+    public static ResolutionType = 'Microsoft.VSO.CS.ResolutionType';
+    public static Description = 'System.Description';
 
     public static fields: string[] = [
         DevopsConstants.Title,

@@ -1,0 +1,19 @@
+.buttons {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+
+/* .tag-dropdowns {
+    display: flex;
+} */
+
+.tag-dropdowns .ms-Dropdown-container * {
+    font-size: 12px !important;
+}
+
+.action-button {
+    margin-left: 10px;
+    padding: 0px;
+}

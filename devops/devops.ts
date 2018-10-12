@@ -1,15 +1,21 @@
 import * as azdev from 'azure-devops-node-api';
 import { TeamContext } from 'azure-devops-node-api/interfaces/CoreInterfaces';
 import {
+    JsonPatchDocument,
+    JsonPatchOperation,
+    Operation
+} from 'azure-devops-node-api/interfaces/common/VSSInterfaces';
+import {
     WorkItem,
     WorkItemQueryResult
 } from 'azure-devops-node-api/interfaces/WorkItemTrackingInterfaces';
 import { IWorkItemTrackingApi } from 'azure-devops-node-api/WorkItemTrackingApi';
 import * as Q from 'q';
 
-import { ITemplate, Templates } from '../templates/template';
-import { IWITTemplate } from './../templates/template';
+import { MarketPlaceTemplate } from '../templates/templateCollection/MarketplaceTemplate';
+import { ITemplate, IWITTemplate } from '../templates/template';
 import { DevopsConstants, DevopsQueries } from './devopsConstants';
+// import { ResolveAction } from '../src/components/Components/ResolveAction';
 
 class WIQLQuery {
     private static getQuery(query: string, template: IWITTemplate): string {
@@ -31,13 +37,37 @@ class WIQLQuery {
     }
 }
 
+export class Template {
+    public static getResolveTempaltes() {
+        return MarketPlaceTemplate.ResolveTemplates;
+    }
+
+    public static getTags() {
+        return MarketPlaceTemplate.Tags;
+    }
+
+    public static getTemplate() {
+        return MarketPlaceTemplate;
+    }
+
+    public static getUrl(id: string) {
+        return (
+            MarketPlaceTemplate.orgUrl +
+            '/' +
+            MarketPlaceTemplate.WITTemplate.ProjectName +
+            '/_workitems/edit/' +
+            id
+        );
+    }
+}
+
 export class Devops {
     public template: ITemplate;
     private connection: azdev.WebApi;
     private witApi: IWorkItemTrackingApi;
 
     constructor() {
-        this.template = Templates.MarketPlaceTemplate;
+        this.template = Template.getTemplate();
         this.connectToAzDev();
     }
 
@@ -67,7 +97,31 @@ export class Devops {
     }
 }
 
+//TODO: better classification
 export class Read extends Devops {
+    public ResolveWorkItems(id: number, tags: string): Q.Promise<WorkItem> {
+        let apiPromise = this.getWitApi();
+        let deferred = Q.defer<WorkItem>();
+
+        apiPromise.then(
+            (api: IWorkItemTrackingApi) => {
+                this.resolveWorkItem(api, id, tags).then(
+                    (workitem: WorkItem) => {
+                        deferred.resolve(workitem);
+                    },
+                    (error: any) => {
+                        deferred.reject(error);
+                    }
+                );
+            },
+            (error: any) => {
+                deferred.reject(error);
+            }
+        );
+
+        return deferred.promise;
+    }
+
     public getAllActiveWorkItems(): Q.Promise<WorkItem[]> {
         let apiPromise = this.getWitApi();
         let deferred = Q.defer<WorkItem[]>();
@@ -120,5 +174,30 @@ export class Read extends Devops {
         };
         let wiql = WIQLQuery.getAllActiveQuery(this.template.WITTemplate);
         return api.queryByWiql({ query: wiql }, teamContext);
+    }
+
+    private resolveWorkItem(
+        api: IWorkItemTrackingApi,
+        id: number,
+        tags: string
+    ): Promise<WorkItem> {
+        let patch: JsonPatchDocument = [
+            {
+                op: Operation.Replace,
+                path: '/fields/' + DevopsConstants.State,
+                value: 'Resolved'
+            } as JsonPatchOperation,
+            {
+                op: Operation.Add,
+                path: '/fields/' + DevopsConstants.Tags,
+                value: tags
+            } as JsonPatchOperation,
+            {
+                op: Operation.Add,
+                path: '/fields/' + DevopsConstants.ResolutionType,
+                value: 'Customer assistance'
+            } as JsonPatchOperation
+        ];
+        return api.updateWorkItem(null, patch, id);
     }
 }

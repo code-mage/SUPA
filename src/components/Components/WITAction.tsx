@@ -11,7 +11,8 @@ export enum Action {
 
 export interface ActionFunc {
     action: Action;
-    callback: () => {}
+    callback: any;
+    cancel: any;
 }
 
 export interface WITActionProps {
@@ -28,9 +29,7 @@ export class WITAction extends React.Component<WITActionProps> {
         let item: JSX.Element = null;
         switch (this.props.action.action) {
             case Action.Resolve:
-                item = <ResolveAction workItems={this.props.workItems} callback={this.props.action.callback}></ResolveAction>;
-            default:
-                item = <span>{"This action is not supported"}</span>;
+                item = <ResolveAction workItems={this.props.workItems} callback={this.props.action.callback} cancel={this.props.action.cancel}></ResolveAction>;
         }
         return <div className="wit-action">{item}</div>;
     }

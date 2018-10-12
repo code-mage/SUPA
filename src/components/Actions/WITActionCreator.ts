@@ -16,7 +16,24 @@ export class WITActionCreator {
                 defer.resolve(null);
             },
             (error: any) => {
-                Actions.setFetchState(FetchState.Error);
+                Actions.setError(error);
+                defer.reject(error);
+            }
+        );
+
+        return defer.promise;
+    }
+
+    public resolveWIT(id: number, tags: string): Q.Promise<any> {
+        let defer = Q.defer<any>();
+
+        this.WITSource.resolveWIT(id, tags).then(
+            value => {
+                this.fetchWITData();
+                defer.resolve(value);
+            },
+            (error: any) => {
+                Actions.setError(error);
                 defer.reject(error);
             }
         );
